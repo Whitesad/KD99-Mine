@@ -7,19 +7,27 @@ import numpy as np
 import pandas as pd
 import csv
 import time
+import random
 
 global label_list  # label_list为全局变量
 global lable_count
 
+sample=[[],[]]
+sample_tag=['smurf.', 'neptune.', 'normal.', 'back.', 'satan.', 'ipsweep.', 'portsweep.', 'warezclient.', 'teardrop.', 'pod.', 'nmap.']
+
+
 # 定义kdd99数据预处理函数
 def preHandel_data():
     source_file = './data/KDD99_train_set_origin'
-    handled_file = './data/KDD99_train_set_origin.csv'
+    handled_file = './data/trainset_percent_1.csv'
     data_file = open(handled_file, 'w', newline='')  # python3.x中添加newline=''这一参数使写入的文件没有多余的空行
 
     line_count = 0
     for index, line in enumerate(open(source_file,'r')):
         line_count += 1
+    sample_count=49380
+    # for i in range(11):
+    #     sample_count+=sample[1][i][1]
 
     start_time = time.clock()
     with open(source_file, 'r') as data_source:
@@ -28,16 +36,17 @@ def preHandel_data():
         count = 0  # 记录数据的行数，初始化为0
         for row in csv_reader:
             temp_line = np.array(row)  # 将每行数据存入temp_line数组里
-            temp_line[1] = handleProtocol(row)  # 将源文件行中3种协议类型转换成数字标识
-            temp_line[2] = handleService(row)  # 将源文件行中70种网络服务类型转换成数字标识
-            temp_line[3] = handleFlag(row)  # 将源文件行中11种网络连接状态转换成数字标识
-            temp_line[41] = handleLabel(row)  # 将源文件行中23种攻击类型转换成数字标识
-            csv_writer.writerow(temp_line)
-            count += 1
-            # 输出每行数据中所修改后的状态
-            # print(count, 'status:', temp_line[1], temp_line[2], temp_line[3], temp_line[41])
-            if(count%100==0):
-                print(str(count)+"/"+str(line_count)+","+str(count/line_count*100)+"%"+"  "+"Running time:", (time.clock() - start_time),"s")
+            if(temp_line[41] in sample_tag and random.randint(1,10)==1):
+                temp_line[1] = handleProtocol(row)  # 将源文件行中3种协议类型转换成数字标识
+                temp_line[2] = handleService(row)  # 将源文件行中70种网络服务类型转换成数字标识
+                temp_line[3] = handleFlag(row)  # 将源文件行中11种网络连接状态转换成数字标识
+                temp_line[41] = handleLabel(row)  # 将源文件行中23种攻击类型转换成数字标识
+                csv_writer.writerow(temp_line)
+                count += 1
+                # 输出每行数据中所修改后的状态
+                # print(count, 'status:', temp_line[1], temp_line[2], temp_line[3], temp_line[41])
+                if(count%100==0):
+                    print(str(count)+"/"+str(sample_count)+","+str(count/sample_count*100)+"%"+"  "+"Running time:", (time.clock() - start_time),"s")
         data_file.close()
 
 
@@ -106,17 +115,32 @@ def statistLabel():
             else:
                 label_list.append(temp_line[41])
                 lable_count[find_index(temp_line[41], label_list)[0]] += 1
-            if(count%100==0):
+            if(count%1000==0):
                 print(count)
+    lable_number=len(lable_count)
+    for i in range(lable_number):
+        for j in range(i+1,lable_number):
+            if(lable_count[j]>lable_count[i]):
+                tem1,tem2=lable_count[i],label_list[i]
+                lable_count[i]=lable_count[j]
+                label_list[i]=label_list[j]
+                lable_count[j]=tem1
+                label_list[j]=tem2
 
-    for i in range(len(lable_count)):
+    for i in range(lable_number):
         if(lable_count[i]!=0):
             print(str(label_list[i])[0:-1]+":",lable_count[i],str(lable_count[i]/count*100)[0:4]+"%")
+    global sample
+    for i in range(11):
+        sample[0].append(label_list[i])
+        sample[1].append([lable_count[i],int(lable_count[i]/10)])
+    print(sample[0])
+    return
 
 if __name__ == '__main__':
     global label_list  # 声明一个全局变量的列表并初始化为空
     global lable_count
     lable_count=100*[0]
     label_list = []
-    statistLabel()
-    # preHandel_data()
+    # statistLabel()
+    preHandel_data()
